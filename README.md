@@ -3,6 +3,8 @@ This is a programming language created in sri lanka based on C# and that languag
 
 An English-prose-style interpreted programming language that reads like plain English.
 
+``` IF ANY ERRORS HAPPEN THEY WILL FIX IN FUTURE RELEASES ```
+
 ## Quick Start
 
 ```bash
