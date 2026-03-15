@@ -1,0 +1,649 @@
+// ════════════════════════════════════════════════════════════════════════════
+// xm package: advancedmath  v1.0.0
+// Number theory, complex numbers, polynomials, sequences, cryptography math
+// Usage:  import "xm_modules/advancedmath/advancedmath"
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Number theory ─────────────────────────────────────────────────────────────
+
+define function gcd that takes a and b
+    set a to absolute of a
+    set b to absolute of b
+    while b is not equal to 0
+        create number temp with value b
+        set b to a modulo b
+        set a to temp
+    end while
+    give back a
+end function
+
+define function lcm that takes a and b
+    if a is equal to 0 or b is equal to 0 then give back 0 end if
+    give back absolute of (a multiplied by b) divided by (call gcd with a and b)
+end function
+
+define function isPrime that takes n
+    if n is less than 2 then give back false end if
+    if n is equal to 2 then give back true end if
+    if n modulo 2 is equal to 0 then give back false end if
+    create number i with value 3
+    while i multiplied by i is less than n plus 1
+        if n modulo i is equal to 0 then give back false end if
+        increase i by 2
+    end while
+    give back true
+end function
+
+define function primeFactors that takes n
+    create list factors with value []
+    create number d with value 2
+    while d multiplied by d is less than n plus 1
+        while n modulo d is equal to 0
+            add d to factors
+            set n to n divided by d
+        end while
+        increase d by 1
+    end while
+    if n is greater than 1 then add n to factors end if
+    give back factors
+end function
+
+define function primesUpTo that takes n
+    // Sieve of Eratosthenes
+    create list sieve with value []
+    for i from 0 to n
+        add true to sieve
+    end for
+    listSet(sieve, 0, false)
+    listSet(sieve, 1, false)
+    create number i with value 2
+    while i multiplied by i is less than n plus 1
+        if sieve at index i then
+            create number j with value i multiplied by i
+            while j is less than n plus 1
+                listSet(sieve, j, false)
+                increase j by i
+            end while
+        end if
+        increase i by 1
+    end while
+    create list primes with value []
+    for i from 2 to n
+        if sieve at index i then add i to primes end if
+    end for
+    give back primes
+end function
+
+define function nextPrime that takes n
+    create number candidate with value n plus 1
+    while not (call isPrime with candidate)
+        increase candidate by 1
+    end while
+    give back candidate
+end function
+
+define function nthPrime that takes n
+    create number count with value 0
+    create number candidate with value 1
+    while count is less than n
+        increase candidate by 1
+        if call isPrime with candidate then
+            increase count by 1
+        end if
+    end while
+    give back candidate
+end function
+
+define function euler_totient that takes n
+    // Euler's phi function: count integers in [1,n] coprime to n
+    create number count with value 0
+    for i from 1 to n
+        if (call gcd with i and n) is equal to 1 then
+            increase count by 1
+        end if
+    end for
+    give back count
+end function
+
+define function mobius that takes n
+    // Möbius function
+    if n is equal to 1 then give back 1 end if
+    create list factors with value call primeFactors with n
+    create number unique with value count of unique(factors)
+    if count of factors is not equal to unique then give back 0 end if
+    if unique modulo 2 is equal to 0 then give back 1 end if
+    give back -1
+end function
+
+define function modPow that takes base and exp and mod
+    // Fast modular exponentiation
+    create number result with value 1
+    set base to base modulo mod
+    while exp is greater than 0
+        if exp modulo 2 is equal to 1 then
+            set result to (result multiplied by base) modulo mod
+        end if
+        set exp to floor(exp divided by 2)
+        set base to (base multiplied by base) modulo mod
+    end while
+    give back result
+end function
+
+define function modInverse that takes a and m
+    // Extended Euclidean — returns x such that (a*x) mod m = 1
+    create number g with value m
+    create number x with value 0
+    create number y with value 1
+    if m is equal to 1 then give back 0 end if
+    create number ta with value a
+    while ta is greater than 1
+        create number q with value floor(ta divided by g)
+        create number t with value g
+        set g to ta modulo g
+        set ta to t
+        set t to x
+        set x to y minus q multiplied by x
+        set y to t
+    end while
+    if y is less than 0 then set y to y plus m end if
+    give back y
+end function
+
+define function chineseRemainder that takes remainders and moduli
+    // CRT: find x such that x ≡ r_i (mod m_i) for all i
+    create number M with value reduce(moduli, lambda that takes acc and m => acc multiplied by m, 1)
+    create number x with value 0
+    create number n with value count of remainders
+    for i from 0 to n minus 1
+        create number mi  with value moduli at index i
+        create number Mi  with value M divided by mi
+        create number inv with value call modInverse with Mi and mi
+        set x to x plus (remainders at index i) multiplied by Mi multiplied by inv
+    end for
+    give back x modulo M
+end function
+
+define function isPerfectSquare that takes n
+    create number s with value floor(squareroot of n)
+    give back s multiplied by s is equal to n
+end function
+
+define function isPerfectNumber that takes n
+    if n is less than 2 then give back false end if
+    create number sum with value 1
+    for i from 2 to floor(squareroot of n)
+        if n modulo i is equal to 0 then
+            set sum to sum plus i
+            if i is not equal to n divided by i then
+                set sum to sum plus n divided by i
+            end if
+        end if
+    end for
+    give back sum is equal to n
+end function
+
+define function isHappyNumber that takes n
+    create list seen with value []
+    while n is not equal to 1
+        if contains(seen, n) then give back false end if
+        add n to seen
+        create number next with value 0
+        while n is greater than 0
+            create number digit with value n modulo 10
+            set next to next plus digit multiplied by digit
+            set n to floor(n divided by 10)
+        end while
+        set n to next
+    end while
+    give back true
+end function
+
+define function digitSum that takes n
+    set n to absolute of n
+    create number total with value 0
+    while n is greater than 0
+        set total to total plus n modulo 10
+        set n to floor(n divided by 10)
+    end while
+    give back total
+end function
+
+define function digitalRoot that takes n
+    set n to absolute of n
+    while n is greater than 9
+        set n to call digitSum with n
+    end while
+    give back n
+end function
+
+define function numberOfDivisors that takes n
+    create number count with value 0
+    for i from 1 to floor(squareroot of n)
+        if n modulo i is equal to 0 then
+            increase count by 1
+            if i is not equal to n divided by i then
+                increase count by 1
+            end if
+        end if
+    end for
+    give back count
+end function
+
+define function sumOfDivisors that takes n
+    create number total with value 0
+    for i from 1 to floor(squareroot of n)
+        if n modulo i is equal to 0 then
+            set total to total plus i
+            if i is not equal to n divided by i then
+                set total to total plus n divided by i
+            end if
+        end if
+    end for
+    give back total
+end function
+
+// ── Complex numbers (represented as {re, im} dicts) ──────────────────────────
+
+define function complex that takes re and im
+    create dict c with value {}
+    dictSet(c, "re", re)
+    dictSet(c, "im", im)
+    give back c
+end function
+
+define function cRe that takes c give back dictGet(c, "re") end function
+define function cIm that takes c give back dictGet(c, "im") end function
+
+define function cAdd that takes a and b
+    give back call complex with (call cRe with a) plus (call cRe with b) and (call cIm with a) plus (call cIm with b)
+end function
+
+define function cSub that takes a and b
+    give back call complex with (call cRe with a) minus (call cRe with b) and (call cIm with a) minus (call cIm with b)
+end function
+
+define function cMul that takes a and b
+    create number re with value (call cRe with a) multiplied by (call cRe with b) minus (call cIm with a) multiplied by (call cIm with b)
+    create number im with value (call cRe with a) multiplied by (call cIm with b) plus (call cIm with a) multiplied by (call cRe with b)
+    give back call complex with re and im
+end function
+
+define function cDiv that takes a and b
+    create number denom with value (call cRe with b) multiplied by (call cRe with b) plus (call cIm with b) multiplied by (call cIm with b)
+    if denom is equal to 0 then give back call complex with 0 and 0 end if
+    create number re with value ((call cRe with a) multiplied by (call cRe with b) plus (call cIm with a) multiplied by (call cIm with b)) divided by denom
+    create number im with value ((call cIm with a) multiplied by (call cRe with b) minus (call cRe with a) multiplied by (call cIm with b)) divided by denom
+    give back call complex with re and im
+end function
+
+define function cAbs that takes c
+    give back squareroot of ((call cRe with c) multiplied by (call cRe with c) plus (call cIm with c) multiplied by (call cIm with c))
+end function
+
+define function cArg that takes c
+    give back call atan2 with (call cIm with c) and (call cRe with c)
+end function
+
+define function cConj that takes c
+    give back call complex with (call cRe with c) and (0 minus call cIm with c)
+end function
+
+define function cToString that takes c
+    create number re with value call cRe with c
+    create number im with value call cIm with c
+    if im is greater than -1 then
+        give back toText(re) joined with " + " joined with toText(im) joined with "i"
+    end if
+    give back toText(re) joined with " - " joined with toText(absolute of im) joined with "i"
+end function
+
+define function cPow that takes c and n
+    // De Moivre's theorem: c^n = r^n * (cos(n*θ) + i*sin(n*θ))
+    create number r    with value call cAbs with c
+    create number theta with value call cArg with c
+    create number rn   with value pow(r, n)
+    give back call complex with (rn multiplied by cos(n multiplied by theta)) and (rn multiplied by sin(n multiplied by theta))
+end function
+
+define function cSqrt that takes c
+    create number r     with value call cAbs with c
+    create number theta with value call cArg with c
+    create number sqrtR with value squareroot of r
+    give back call complex with (sqrtR multiplied by cos(theta divided by 2)) and (sqrtR multiplied by sin(theta divided by 2))
+end function
+
+// ── Polynomials (list of coefficients, index = degree) ───────────────────────
+
+define function polyEval that takes coeffs and x
+    // Horner's method: p(x) = a0 + x*(a1 + x*(a2 + ...))
+    create number n      with value count of coeffs minus 1
+    create number result with value coeffs at index n
+    for i from n minus 1 to 0 step -1
+        set result to result multiplied by x plus (coeffs at index i)
+    end for
+    give back result
+end function
+
+define function polyAdd that takes a and b
+    create number n with value max(count of a, count of b)
+    create list result with value []
+    for i from 0 to n minus 1
+        create number ca with value 0
+        create number cb with value 0
+        if i is less than count of a then set ca to a at index i end if
+        if i is less than count of b then set cb to b at index i end if
+        add ca plus cb to result
+    end for
+    give back result
+end function
+
+define function polyScale that takes coeffs and scalar
+    give back map(coeffs, lambda that takes c => c multiplied by scalar)
+end function
+
+define function polyDerivative that takes coeffs
+    // d/dx of sum(a_i * x^i) = sum(i * a_i * x^(i-1))
+    create list result with value []
+    create number n with value count of coeffs
+    for i from 1 to n minus 1
+        add i multiplied by (coeffs at index i) to result
+    end for
+    give back result
+end function
+
+define function polyIntegral that takes coeffs and c
+    // Indefinite integral with constant c
+    create list result with value [c]
+    create number n with value count of coeffs
+    for i from 0 to n minus 1
+        add (coeffs at index i) divided by (i plus 1) to result
+    end for
+    give back result
+end function
+
+define function polyRoots2 that takes a and b and c
+    // Quadratic formula for ax² + bx + c = 0
+    create number disc with value b multiplied by b minus 4 multiplied by a multiplied by c
+    create dict roots with value {}
+    if disc is greater than -1 then
+        dictSet(roots, "r1", (0 minus b plus squareroot of disc) divided by (2 multiplied by a))
+        dictSet(roots, "r2", (0 minus b minus squareroot of disc) divided by (2 multiplied by a))
+        dictSet(roots, "type", "real")
+    otherwise
+        // Complex roots
+        create number realPart with value (0 minus b) divided by (2 multiplied by a)
+        create number imagPart with value squareroot of (absolute of disc) divided by (2 multiplied by a)
+        dictSet(roots, "r1_re", realPart)
+        dictSet(roots, "r1_im", imagPart)
+        dictSet(roots, "r2_re", realPart)
+        dictSet(roots, "r2_im", 0 minus imagPart)
+        dictSet(roots, "type", "complex")
+    end if
+    give back roots
+end function
+
+// ── Famous sequences ──────────────────────────────────────────────────────────
+
+define function fibonacci that takes n
+    if n is less than 2 then give back n end if
+    create number a with value 0
+    create number b with value 1
+    for i from 2 to n
+        create number temp with value b
+        set b to a plus b
+        set a to temp
+    end for
+    give back b
+end function
+
+define function fibonacciSeq that takes n
+    create list seq with value [0, 1]
+    for i from 2 to n minus 1
+        add (seq at index (i minus 1)) plus (seq at index (i minus 2)) to seq
+    end for
+    give back seq
+end function
+
+define function tribonacci that takes n
+    if n is equal to 0 then give back 0 end if
+    if n is less than 3 then give back 1 end if
+    create number a with value 0
+    create number b with value 1
+    create number c with value 1
+    for i from 3 to n
+        create number next with value a plus b plus c
+        set a to b
+        set b to c
+        set c to next
+    end for
+    give back c
+end function
+
+define function lucas that takes n
+    if n is equal to 0 then give back 2 end if
+    if n is equal to 1 then give back 1 end if
+    create number a with value 2
+    create number b with value 1
+    for i from 2 to n
+        create number temp with value b
+        set b to a plus b
+        set a to temp
+    end for
+    give back b
+end function
+
+define function catalan that takes n
+    give back (call factorial with (2 multiplied by n)) divided by ((call factorial with (n plus 1)) multiplied by (call factorial with n))
+end function
+
+define function collatz that takes n
+    // Returns the Collatz sequence starting at n
+    create list seq with value [n]
+    while n is not equal to 1
+        if n modulo 2 is equal to 0 then
+            set n to n divided by 2
+        otherwise
+            set n to 3 multiplied by n plus 1
+        end if
+        add n to seq
+    end while
+    give back seq
+end function
+
+define function collatzLength that takes n
+    give back count of (call collatz with n)
+end function
+
+define function triangularNumber that takes n
+    give back n multiplied by (n plus 1) divided by 2
+end function
+
+define function isTriangular that takes n
+    // n is triangular if 8n+1 is a perfect square
+    create number test with value 8 multiplied by n plus 1
+    create number s    with value floor(squareroot of test)
+    give back s multiplied by s is equal to test
+end function
+
+define function pentagonalNumber that takes n
+    give back n multiplied by (3 multiplied by n minus 1) divided by 2
+end function
+
+define function hexagonalNumber that takes n
+    give back n multiplied by (2 multiplied by n minus 1)
+end function
+
+define function figurateNumber that takes n and sides
+    // General polygonal number
+    give back n multiplied by ((sides minus 2) multiplied by n minus (sides minus 4)) divided by 2
+end function
+
+// ── Bit manipulation ──────────────────────────────────────────────────────────
+
+define function countBits that takes n
+    // Count set bits (Hamming weight)
+    create number count with value 0
+    while n is greater than 0
+        set count to count plus n modulo 2
+        set n to floor(n divided by 2)
+    end while
+    give back count
+end function
+
+define function toBinary that takes n
+    if n is equal to 0 then give back "0" end if
+    create text bits with value ""
+    create number num with value absolute of n
+    while num is greater than 0
+        set bits to toText(num modulo 2) joined with bits
+        set num to floor(num divided by 2)
+    end while
+    if n is less than 0 then set bits to "-" joined with bits end if
+    give back bits
+end function
+
+define function toHex that takes n
+    create text hexChars with value "0123456789ABCDEF"
+    if n is equal to 0 then give back "0" end if
+    create text result with value ""
+    create number num with value absolute of n
+    while num is greater than 0
+        set result to charAt(hexChars, num modulo 16) joined with result
+        set num to floor(num divided by 16)
+    end while
+    give back result
+end function
+
+define function toOctal that takes n
+    if n is equal to 0 then give back "0" end if
+    create text result with value ""
+    create number num with value absolute of n
+    while num is greater than 0
+        set result to toText(num modulo 8) joined with result
+        set num to floor(num divided by 8)
+    end while
+    give back result
+end function
+
+define function fromBinary that takes s
+    create number result with value 0
+    create number power  with value 1
+    create number i      with value length of s minus 1
+    while i is greater than -1
+        if charAt(s, i) is equal to "1" then
+            set result to result plus power
+        end if
+        set power to power multiplied by 2
+        decrease i by 1
+    end while
+    give back result
+end function
+
+define function isPowerOf2 that takes n
+    if n is less than 1 then give back false end if
+    give back (call countBits with n) is equal to 1
+end function
+
+define function nextPowerOf2 that takes n
+    create number p with value 1
+    while p is less than n
+        set p to p multiplied by 2
+    end while
+    give back p
+end function
+
+// ── Continued fractions ───────────────────────────────────────────────────────
+
+define function continuedFraction that takes x and steps
+    // Returns the continued fraction coefficients of x
+    create list coeffs with value []
+    for i from 0 to steps minus 1
+        create number a with value floor(x)
+        add a to coeffs
+        create number frac with value x minus a
+        if absolute of frac is less than 1e-10 then give back coeffs end if
+        set x to 1 divided by frac
+    end for
+    give back coeffs
+end function
+
+define function continuedFractionToRational that takes coeffs
+    // Convert continued fraction back to p/q
+    create number n with value count of coeffs minus 1
+    create number p with value coeffs at index n
+    create number q with value 1
+    for i from n minus 1 to 0 step -1
+        create number newP with value (coeffs at index i) multiplied by p plus q
+        create number newQ with value p
+        set p to newP
+        set q to newQ
+    end for
+    create dict result with value {}
+    create number g with value call gcd with p and q
+    dictSet(result, "numerator",   p divided by g)
+    dictSet(result, "denominator", q divided by g)
+    give back result
+end function
+
+// ── Golden ratio and related ──────────────────────────────────────────────────
+
+create number GOLDEN_RATIO with value 1.6180339887498948482
+create number SILVER_RATIO with value 2.4142135623730950488
+create number SQRT2        with value 1.4142135623730950488
+create number SQRT3        with value 1.7320508075688772935
+create number SQRT5        with value 2.2360679774997896964
+create number LN2          with value 0.6931471805599453094
+create number LN10         with value 2.3025850929940456840
+create number LOG2E        with value 1.4426950408889634074
+create number LOG10E       with value 0.4342944819032518277
+create number TAU          with value 6.2831853071795864769   // 2 * PI
+create number CATALAN      with value 0.9159655941772190402   // Catalan's constant
+create number EULER_GAMMA  with value 0.5772156649015328606   // Euler-Mascheroni
+
+// ── Miscellaneous ─────────────────────────────────────────────────────────────
+
+define function clamp that takes x and lo and hi
+    if x is less than lo then give back lo end if
+    if x is greater than hi then give back hi end if
+    give back x
+end function
+
+define function lerp that takes a and b and t
+    give back a plus (b minus a) multiplied by t
+end function
+
+define function smoothstep that takes edge0 and edge1 and x
+    create number t with value call clamp with ((x minus edge0) divided by (edge1 minus edge0)) and 0 and 1
+    give back t multiplied by t multiplied by (3 minus 2 multiplied by t)
+end function
+
+define function isPalindrome that takes n
+    create text s with value toText(absolute of n)
+    give back s is equal to reverse(s)
+end function
+
+define function kaprekarConstant
+    // Returns 6174 (the Kaprekar constant)
+    give back 6174
+end function
+
+define function sumDigits that takes n
+    give back call digitSum with n
+end function
+
+define function reverseNumber that takes n
+    create text s with value toText(absolute of n)
+    create number result with value toNumber(reverse(s))
+    if n is less than 0 then give back 0 minus result end if
+    give back result
+end function
+
+// re-export atan2 for convenience (used internally)
+define function atan2 that takes y and x
+    if x is greater than 0 then give back atan(y divided by x) end if
+    if x is less than 0 and y is greater than -1 then give back atan(y divided by x) plus PI end if
+    if x is less than 0 and y is less than 0    then give back atan(y divided by x) minus PI end if
+    if x is equal to 0 and y is greater than 0  then give back PI divided by 2 end if
+    if x is equal to 0 and y is less than 0     then give back 0 minus PI divided by 2 end if
+    give back 0
+end function

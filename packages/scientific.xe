@@ -1,0 +1,641 @@
+// ════════════════════════════════════════════════════════════════════════════
+// xm package: scientific  v1.0.0
+// Statistics, linear algebra, signal processing, physics constants, units
+// Usage:  import "xm_modules/scientific/scientific"
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Physical constants ────────────────────────────────────────────────────────
+create number SPEED_OF_LIGHT    with value 299792458        // m/s
+create number PLANCK            with value 6.62607015e-34   // J·s
+create number BOLTZMANN         with value 1.380649e-23     // J/K
+create number AVOGADRO          with value 6.02214076e23    // mol⁻¹
+create number GRAVITATIONAL     with value 6.674e-11        // N·m²/kg²
+create number ELECTRON_CHARGE   with value 1.602176634e-19  // C
+create number ELECTRON_MASS     with value 9.1093837015e-31 // kg
+create number PROTON_MASS       with value 1.67262192369e-27// kg
+create number NEUTRON_MASS      with value 1.67492749804e-27// kg
+create number GAS_CONSTANT      with value 8.314462618      // J/(mol·K)
+create number FARADAY           with value 96485.33212      // C/mol
+create number VACUUM_PERMITTIVITY with value 8.8541878128e-12 // F/m
+create number VACUUM_PERMEABILITY with value 1.25663706212e-6 // H/m
+create number STEFAN_BOLTZMANN  with value 5.670374419e-8   // W/(m²·K⁴)
+create number GRAVITY           with value 9.80665          // m/s² (standard)
+
+// ── Unit conversions ──────────────────────────────────────────────────────────
+
+// Temperature
+define function celsiusToFahrenheit that takes c
+    give back (c multiplied by 1.8) plus 32
+end function
+
+define function fahrenheitToCelsius that takes f
+    give back (f minus 32) divided by 1.8
+end function
+
+define function celsiusToKelvin that takes c
+    give back c plus 273.15
+end function
+
+define function kelvinToCelsius that takes k
+    give back k minus 273.15
+end function
+
+define function fahrenheitToKelvin that takes f
+    give back call celsiusToKelvin with (call fahrenheitToCelsius with f)
+end function
+
+// Length
+define function metersToFeet        that takes m   give back m multiplied by 3.28084       end function
+define function feetToMeters        that takes ft  give back ft divided by 3.28084         end function
+define function metersToMiles       that takes m   give back m divided by 1609.344         end function
+define function milesToMeters       that takes mi  give back mi multiplied by 1609.344     end function
+define function metersToInches      that takes m   give back m multiplied by 39.3701       end function
+define function inchesToMeters      that takes i   give back i divided by 39.3701          end function
+define function metersToYards       that takes m   give back m multiplied by 1.09361       end function
+define function cmToInches          that takes cm  give back cm divided by 2.54            end function
+define function inchesToCm          that takes i   give back i multiplied by 2.54          end function
+define function kmToMiles           that takes km  give back km divided by 1.60934         end function
+define function milesToKm           that takes mi  give back mi multiplied by 1.60934      end function
+define function metersToLightYears  that takes m   give back m divided by 9.461e15         end function
+define function lightYearsToMeters  that takes ly  give back ly multiplied by 9.461e15     end function
+
+// Mass
+define function kgToLbs             that takes kg  give back kg multiplied by 2.20462      end function
+define function lbsToKg             that takes lb  give back lb divided by 2.20462         end function
+define function kgToOunces          that takes kg  give back kg multiplied by 35.274       end function
+define function gramsToOunces       that takes g   give back g divided by 28.3495          end function
+define function ouncesToGrams       that takes oz  give back oz multiplied by 28.3495      end function
+define function kgToStone           that takes kg  give back kg divided by 6.35029         end function
+
+// Energy
+define function joulesToCalories    that takes j   give back j divided by 4.184            end function
+define function caloriesToJoules    that takes cal give back cal multiplied by 4.184       end function
+define function joulesToKwh         that takes j   give back j divided by 3600000          end function
+define function kwhToJoules         that takes kwh give back kwh multiplied by 3600000     end function
+define function joulesToEv          that takes j   give back j divided by 1.602176634e-19  end function
+define function evToJoules          that takes ev  give back ev multiplied by 1.602176634e-19 end function
+
+// Speed
+define function msToKmh             that takes ms  give back ms multiplied by 3.6          end function
+define function kmhToMs             that takes kmh give back kmh divided by 3.6            end function
+define function msToMph             that takes ms  give back ms multiplied by 2.23694      end function
+define function mphToMs             that takes mph give back mph divided by 2.23694        end function
+define function knotsToMs           that takes kn  give back kn multiplied by 0.514444     end function
+
+// Pressure
+define function paToBar             that takes pa  give back pa divided by 100000          end function
+define function barToPa             that takes bar give back bar multiplied by 100000      end function
+define function paToAtm             that takes pa  give back pa divided by 101325          end function
+define function atmToPa             that takes atm give back atm multiplied by 101325      end function
+define function paToPsi             that takes pa  give back pa divided by 6894.76         end function
+
+// Angle
+define function degreesToRadians    that takes deg give back deg multiplied by PI divided by 180 end function
+define function radiansToDegrees    that takes rad give back rad multiplied by 180 divided by PI end function
+
+// Data
+define function bytesToKB           that takes b   give back b divided by 1024             end function
+define function bytesToMB           that takes b   give back b divided by 1048576          end function
+define function bytesToGB           that takes b   give back b divided by 1073741824       end function
+define function kbToBytes           that takes kb  give back kb multiplied by 1024         end function
+define function mbToBytes           that takes mb  give back mb multiplied by 1048576      end function
+define function gbToBytes           that takes gb  give back gb multiplied by 1073741824   end function
+
+// ── Statistics ────────────────────────────────────────────────────────────────
+
+define function mean that takes data
+    if count of data is equal to 0 then give back 0 end if
+    give back reduce(data, lambda that takes acc and x => acc plus x, 0) divided by count of data
+end function
+
+define function median that takes data
+    if count of data is equal to 0 then give back 0 end if
+    create list sorted with value sort(data)
+    create number n with value count of sorted
+    create number mid with value floor(n divided by 2)
+    if n modulo 2 is equal to 0 then
+        give back (sorted at index (mid minus 1) plus sorted at index mid) divided by 2
+    end if
+    give back sorted at index mid
+end function
+
+define function mode that takes data
+    create dict freq with value {}
+    for each x in data
+        create text k with value toText(x)
+        if dictHas(freq, k) then
+            dictSet(freq, k, dictGet(freq, k) plus 1)
+        otherwise
+            dictSet(freq, k, 1)
+        end if
+    end for
+    create number maxFreq with value 0
+    create any modeVal with value nothing
+    for each k in keys(freq)
+        if dictGet(freq, k) is greater than maxFreq then
+            set maxFreq to dictGet(freq, k)
+            set modeVal to toNumber(k)
+        end if
+    end for
+    give back modeVal
+end function
+
+define function variance that takes data
+    if count of data is less than 2 then give back 0 end if
+    create number m with value call mean with data
+    create number sumSq with value reduce(data, lambda that takes acc and x => acc plus (x minus m) multiplied by (x minus m), 0)
+    give back sumSq divided by count of data
+end function
+
+define function stdDev that takes data
+    give back squareroot of (call variance with data)
+end function
+
+define function sampleVariance that takes data
+    if count of data is less than 2 then give back 0 end if
+    create number m with value call mean with data
+    create number sumSq with value reduce(data, lambda that takes acc and x => acc plus (x minus m) multiplied by (x minus m), 0)
+    give back sumSq divided by (count of data minus 1)
+end function
+
+define function sampleStdDev that takes data
+    give back squareroot of (call sampleVariance with data)
+end function
+
+define function range that takes data
+    if count of data is equal to 0 then give back 0 end if
+    create number mn with value first(sort(data))
+    create number mx with value last(sort(data))
+    give back mx minus mn
+end function
+
+define function percentile that takes data and p
+    // p is 0-100
+    create list sorted with value sort(data)
+    create number n with value count of sorted
+    create number idx with value (p divided by 100) multiplied by (n minus 1)
+    create number lo with value floor(idx)
+    create number hi with value lo plus 1
+    if hi is greater than n minus 1 then give back sorted at index (n minus 1) end if
+    create number frac with value idx minus lo
+    give back (sorted at index lo) plus frac multiplied by ((sorted at index hi) minus (sorted at index lo))
+end function
+
+define function quartiles that takes data
+    create dict q with value {}
+    dictSet(q, "q1",  call percentile with data and 25)
+    dictSet(q, "q2",  call percentile with data and 50)
+    dictSet(q, "q3",  call percentile with data and 75)
+    dictSet(q, "iqr", dictGet(q, "q3") minus dictGet(q, "q1"))
+    dictSet(q, "min", first(sort(data)))
+    dictSet(q, "max", last(sort(data)))
+    give back q
+end function
+
+define function covariance that takes dataX and dataY
+    if count of dataX is not equal to count of dataY then give back 0 end if
+    create number mx with value call mean with dataX
+    create number my with value call mean with dataY
+    create number n with value count of dataX
+    create number total with value 0
+    for i from 0 to n minus 1
+        set total to total plus ((dataX at index i) minus mx) multiplied by ((dataY at index i) minus my)
+    end for
+    give back total divided by n
+end function
+
+define function correlation that takes dataX and dataY
+    create number cov with value call covariance with dataX and dataY
+    create number sdX with value call stdDev with dataX
+    create number sdY with value call stdDev with dataY
+    if sdX is equal to 0 or sdY is equal to 0 then give back 0 end if
+    give back cov divided by (sdX multiplied by sdY)
+end function
+
+define function zScore that takes x and data
+    create number m with value call mean with data
+    create number s with value call stdDev with data
+    if s is equal to 0 then give back 0 end if
+    give back (x minus m) divided by s
+end function
+
+define function normalize that takes data
+    // Min-max normalization to [0,1]
+    create number mn with value first(sort(data))
+    create number mx with value last(sort(data))
+    create number rng with value mx minus mn
+    if rng is equal to 0 then give back map(data, lambda that takes x => 0) end if
+    give back map(data, lambda that takes x => (x minus mn) divided by rng)
+end function
+
+define function standardize that takes data
+    // Z-score standardization
+    create number m with value call mean with data
+    create number s with value call stdDev with data
+    if s is equal to 0 then give back map(data, lambda that takes x => 0) end if
+    give back map(data, lambda that takes x => (x minus m) divided by s)
+end function
+
+define function linearRegression that takes dataX and dataY
+    // Returns dict with slope, intercept, r2
+    create number n   with value count of dataX
+    create number mx  with value call mean with dataX
+    create number my  with value call mean with dataY
+    create number num with value 0
+    create number den with value 0
+    for i from 0 to n minus 1
+        set num to num plus ((dataX at index i) minus mx) multiplied by ((dataY at index i) minus my)
+        set den to den plus ((dataX at index i) minus mx) multiplied by ((dataX at index i) minus mx)
+    end for
+    create number slope     with value 0
+    if den is not equal to 0 then set slope to num divided by den end if
+    create number intercept with value my minus slope multiplied by mx
+    create number r         with value call correlation with dataX and dataY
+    create dict result with value {}
+    dictSet(result, "slope",     slope)
+    dictSet(result, "intercept", intercept)
+    dictSet(result, "r2",        r multiplied by r)
+    dictSet(result, "predict",   lambda that takes x => slope multiplied by x plus intercept)
+    give back result
+end function
+
+define function summaryStats that takes data
+    create dict s with value {}
+    dictSet(s, "count",  count of data)
+    dictSet(s, "mean",   call mean with data)
+    dictSet(s, "median", call median with data)
+    dictSet(s, "stddev", call stdDev with data)
+    dictSet(s, "min",    first(sort(data)))
+    dictSet(s, "max",    last(sort(data)))
+    dictSet(s, "range",  call range with data)
+    dictSet(s, "q1",     call percentile with data and 25)
+    dictSet(s, "q3",     call percentile with data and 75)
+    give back s
+end function
+
+// ── Linear Algebra (vectors and matrices as lists) ────────────────────────────
+
+define function vectorAdd that takes a and b
+    give back map(range(0, count of a minus 1), lambda that takes i => (a at index i) plus (b at index i))
+end function
+
+define function vectorSub that takes a and b
+    give back map(range(0, count of a minus 1), lambda that takes i => (a at index i) minus (b at index i))
+end function
+
+define function vectorScale that takes v and scalar
+    give back map(v, lambda that takes x => x multiplied by scalar)
+end function
+
+define function dotProduct that takes a and b
+    give back reduce(
+        map(range(0, count of a minus 1), lambda that takes i => (a at index i) multiplied by (b at index i)),
+        lambda that takes acc and x => acc plus x,
+        0
+    )
+end function
+
+define function vectorMagnitude that takes v
+    give back squareroot of (call dotProduct with v and v)
+end function
+
+define function vectorNormalize that takes v
+    create number mag with value call vectorMagnitude with v
+    if mag is equal to 0 then give back v end if
+    give back call vectorScale with v and (1 divided by mag)
+end function
+
+define function crossProduct that takes a and b
+    // 3D only
+    create list result with value [
+        (a at index 1) multiplied by (b at index 2) minus (a at index 2) multiplied by (b at index 1),
+        (a at index 2) multiplied by (b at index 0) minus (a at index 0) multiplied by (b at index 2),
+        (a at index 0) multiplied by (b at index 1) minus (a at index 1) multiplied by (b at index 0)
+    ]
+    give back result
+end function
+
+define function vectorDistance that takes a and b
+    give back call vectorMagnitude with (call vectorSub with a and b)
+end function
+
+define function vectorAngle that takes a and b
+    create number dot  with value call dotProduct with a and b
+    create number magA with value call vectorMagnitude with a
+    create number magB with value call vectorMagnitude with b
+    if magA is equal to 0 or magB is equal to 0 then give back 0 end if
+    give back call radiansToDegrees with (acos(dot divided by (magA multiplied by magB)))
+end function
+
+// Matrix operations (matrix = list of row-lists)
+define function matGet that takes mat and row and col
+    give back (mat at index row) at index col
+end function
+
+define function matRows that takes mat
+    give back count of mat
+end function
+
+define function matCols that takes mat
+    give back count of (mat at index 0)
+end function
+
+define function matAdd that takes a and b
+    create number rows with value call matRows with a
+    create list result with value []
+    for i from 0 to rows minus 1
+        create list row with value []
+        create number cols with value call matCols with a
+        for j from 0 to cols minus 1
+            add ((a at index i) at index j) plus ((b at index i) at index j) to row
+        end for
+        add row to result
+    end for
+    give back result
+end function
+
+define function matScale that takes mat and scalar
+    give back map(mat, lambda that takes row => map(row, lambda that takes x => x multiplied by scalar))
+end function
+
+define function matTranspose that takes mat
+    create number rows with value call matRows with mat
+    create number cols with value call matCols with mat
+    create list result with value []
+    for j from 0 to cols minus 1
+        create list row with value []
+        for i from 0 to rows minus 1
+            add (mat at index i) at index j to row
+        end for
+        add row to result
+    end for
+    give back result
+end function
+
+define function matMultiply that takes a and b
+    create number rowsA with value call matRows with a
+    create number colsA with value call matCols with a
+    create number colsB with value call matCols with b
+    create list result with value []
+    for i from 0 to rowsA minus 1
+        create list row with value []
+        for j from 0 to colsB minus 1
+            create number sum with value 0
+            for k from 0 to colsA minus 1
+                set sum to sum plus ((a at index i) at index k) multiplied by ((b at index k) at index j)
+            end for
+            add sum to row
+        end for
+        add row to result
+    end for
+    give back result
+end function
+
+define function matIdentity that takes n
+    create list result with value []
+    for i from 0 to n minus 1
+        create list row with value []
+        for j from 0 to n minus 1
+            if i is equal to j then add 1 to row otherwise add 0 to row end if
+        end for
+        add row to result
+    end for
+    give back result
+end function
+
+define function mat2x2Det that takes mat
+    give back ((mat at index 0) at index 0) multiplied by ((mat at index 1) at index 1)
+        minus ((mat at index 0) at index 1) multiplied by ((mat at index 1) at index 0)
+end function
+
+// ── Signal processing ─────────────────────────────────────────────────────────
+
+define function movingAverage that takes data and windowSize
+    create list result with value []
+    create number n with value count of data
+    for i from 0 to n minus 1
+        create number start with value max(0, i minus windowSize plus 1)
+        create number total with value 0
+        create number cnt   with value 0
+        for j from start to i
+            set total to total plus (data at index j)
+            increase cnt by 1
+        end for
+        add total divided by cnt to result
+    end for
+    give back result
+end function
+
+define function exponentialSmoothing that takes data and alpha
+    // alpha 0-1: smoothing factor (higher = less smoothing)
+    create list result with value []
+    create number smoothed with value data at index 0
+    add smoothed to result
+    create number n with value count of data
+    for i from 1 to n minus 1
+        set smoothed to alpha multiplied by (data at index i) plus (1 minus alpha) multiplied by smoothed
+        add smoothed to result
+    end for
+    give back result
+end function
+
+define function cumSum that takes data
+    create list result with value []
+    create number running with value 0
+    for each x in data
+        set running to running plus x
+        add running to result
+    end for
+    give back result
+end function
+
+define function diff that takes data
+    // First difference
+    create list result with value []
+    create number n with value count of data
+    for i from 1 to n minus 1
+        add (data at index i) minus (data at index i minus 1) to result
+    end for
+    give back result
+end function
+
+define function convolve that takes signal and kernel
+    create number n  with value count of signal
+    create number kn with value count of kernel
+    create list result with value []
+    for i from 0 to n minus 1
+        create number sum with value 0
+        for j from 0 to kn minus 1
+            create number si with value i minus j
+            if si is greater than -1 and si is less than n then
+                set sum to sum plus (signal at index si) multiplied by (kernel at index j)
+            end if
+        end for
+        add sum to result
+    end for
+    give back result
+end function
+
+// ── Numerical methods ─────────────────────────────────────────────────────────
+
+define function bisect that takes f and a and b and tol
+    // Find root of f in [a,b] using bisection
+    create number lo with value a
+    create number hi with value b
+    create number mid with value (lo plus hi) divided by 2
+    repeat 100 times
+        set mid to (lo plus hi) divided by 2
+        create number fmid with value call f with mid
+        if absolute of fmid is less than tol then give back mid end if
+        if (call f with lo) multiplied by fmid is less than 0 then
+            set hi to mid
+        otherwise
+            set lo to mid
+        end if
+    end repeat
+    give back mid
+end function
+
+define function newtonRaphson that takes f and df and x0 and tol
+    create number x with value x0
+    repeat 100 times
+        create number fx  with value call f with x
+        create number dfx with value call df with x
+        if absolute of dfx is less than 1e-15 then give back x end if
+        create number xNew with value x minus fx divided by dfx
+        if absolute of (xNew minus x) is less than tol then give back xNew end if
+        set x to xNew
+    end repeat
+    give back x
+end function
+
+define function trapezoidalIntegral that takes f and a and b and n
+    create number h with value (b minus a) divided by n
+    create number total with value (call f with a) plus (call f with b)
+    for i from 1 to n minus 1
+        set total to total plus 2 multiplied by (call f with (a plus i multiplied by h))
+    end for
+    give back total multiplied by h divided by 2
+end function
+
+define function simpsonsIntegral that takes f and a and b and n
+    // n must be even
+    if n modulo 2 is not equal to 0 then increase n by 1 end if
+    create number h with value (b minus a) divided by n
+    create number total with value (call f with a) plus (call f with b)
+    for i from 1 to n minus 1
+        create number coeff with value 2
+        if i modulo 2 is not equal to 0 then set coeff to 4 end if
+        set total to total plus coeff multiplied by (call f with (a plus i multiplied by h))
+    end for
+    give back total multiplied by h divided by 3
+end function
+
+define function eulerODE that takes f and t0 and y0 and tEnd and h
+    // Solve dy/dt = f(t,y) with Euler method
+    // Returns list of [t, y] pairs
+    create list result with value []
+    create number t with value t0
+    create number y with value y0
+    while t is less than tEnd plus h divided by 2
+        add [t, y] to result
+        set y to y plus h multiplied by (call f with t and y)
+        increase t by h
+    end while
+    give back result
+end function
+
+// ── acos / asin / atan helper (via Taylor or identity) ───────────────────────
+
+define function acos that takes x
+    // acos(x) = PI/2 - asin(x), using atan identity
+    if x is equal to 1 then give back 0 end if
+    if x is equal to -1 then give back PI end if
+    give back PI divided by 2 minus call asin with x
+end function
+
+define function asin that takes x
+    // asin via atan: asin(x) = atan(x / sqrt(1 - x^2))
+    if x is equal to 1 then give back PI divided by 2 end if
+    if x is equal to -1 then give back 0 minus PI divided by 2 end if
+    give back call atan with (x divided by squareroot of (1 minus x multiplied by x))
+end function
+
+define function atan that takes x
+    // atan via series: good for |x| <= 1
+    if x is greater than 1 then
+        give back PI divided by 2 minus call atan with (1 divided by x)
+    end if
+    if x is less than -1 then
+        give back 0 minus PI divided by 2 minus call atan with (1 divided by x)
+    end if
+    create number result with value 0
+    create number term   with value x
+    create number xSq    with value x multiplied by x
+    create number sign   with value 1
+    for i from 1 to 50
+        set result to result plus sign multiplied by term divided by (2 multiplied by i minus 1)
+        set term to term multiplied by xSq
+        set sign to sign multiplied by -1
+    end for
+    give back result
+end function
+
+define function atan2 that takes y and x
+    if x is greater than 0 then give back call atan with (y divided by x) end if
+    if x is less than 0 and y is greater than -1 then give back (call atan with (y divided by x)) plus PI end if
+    if x is less than 0 and y is less than 0 then give back (call atan with (y divided by x)) minus PI end if
+    if x is equal to 0 and y is greater than 0 then give back PI divided by 2 end if
+    if x is equal to 0 and y is less than 0 then give back 0 minus PI divided by 2 end if
+    give back 0
+end function
+
+// ── Combinatorics ─────────────────────────────────────────────────────────────
+
+define function factorial that takes n
+    if n is less than 1 then give back 1 end if
+    create number result with value 1
+    for i from 2 to n
+        set result to result multiplied by i
+    end for
+    give back result
+end function
+
+define function permutations that takes n and r
+    // P(n,r) = n! / (n-r)!
+    if r is greater than n then give back 0 end if
+    give back (call factorial with n) divided by (call factorial with (n minus r))
+end function
+
+define function combinations that takes n and r
+    // C(n,r) = n! / (r! * (n-r)!)
+    if r is greater than n then give back 0 end if
+    give back (call factorial with n) divided by ((call factorial with r) multiplied by (call factorial with (n minus r)))
+end function
+
+define function binomialCoeff that takes n and k
+    give back call combinations with n and k
+end function
+
+define function pascalRow that takes n
+    create list row with value [1]
+    for k from 1 to n
+        add (call combinations with n and k) to row
+    end for
+    give back row
+end function
+
+// ── Probability distributions ─────────────────────────────────────────────────
+
+define function normalPDF that takes x and mu and sigma
+    create number z    with value (x minus mu) divided by sigma
+    give back (1 divided by (sigma multiplied by squareroot of (2 multiplied by PI))) multiplied by exp(0 minus 0.5 multiplied by z multiplied by z)
+end function
+
+define function poissonPMF that takes k and lambda
+    give back (pow(lambda, k) multiplied by exp(0 minus lambda)) divided by (call factorial with k)
+end function
+
+define function binomialPMF that takes k and n and p
+    give back (call combinations with n and k) multiplied by pow(p, k) multiplied by pow(1 minus p, n minus k)
+end function

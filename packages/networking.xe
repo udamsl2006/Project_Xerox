@@ -1,0 +1,369 @@
+// ════════════════════════════════════════════════════════════════════════════
+// xm package: networking  v1.0.0
+// HTTP requests, URL parsing, query strings, headers, simple REST client
+// Usage:  import "xm_modules/networking/networking"
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── URL utilities ─────────────────────────────────────────────────────────────
+
+define function urlEncode that takes s
+    // Encode special characters for URLs
+    create text result with value s
+    set result to replace(result, " ",  "%20")
+    set result to replace(result, "!",  "%21")
+    set result to replace(result, "#",  "%23")
+    set result to replace(result, "$",  "%24")
+    set result to replace(result, "&",  "%26")
+    set result to replace(result, "'",  "%27")
+    set result to replace(result, "(",  "%28")
+    set result to replace(result, ")",  "%29")
+    set result to replace(result, "*",  "%2A")
+    set result to replace(result, "+",  "%2B")
+    set result to replace(result, ",",  "%2C")
+    set result to replace(result, "/",  "%2F")
+    set result to replace(result, ":",  "%3A")
+    set result to replace(result, ";",  "%3B")
+    set result to replace(result, "=",  "%3D")
+    set result to replace(result, "?",  "%3F")
+    set result to replace(result, "@",  "%40")
+    set result to replace(result, "[",  "%5B")
+    set result to replace(result, "]",  "%5D")
+    give back result
+end function
+
+define function urlDecode that takes s
+    create text result with value s
+    set result to replace(result, "%20", " ")
+    set result to replace(result, "%21", "!")
+    set result to replace(result, "%23", "#")
+    set result to replace(result, "%24", "$")
+    set result to replace(result, "%26", "&")
+    set result to replace(result, "%27", "'")
+    set result to replace(result, "%28", "(")
+    set result to replace(result, "%29", ")")
+    set result to replace(result, "%2A", "*")
+    set result to replace(result, "%2B", "+")
+    set result to replace(result, "%2C", ",")
+    set result to replace(result, "%2F", "/")
+    set result to replace(result, "%3A", ":")
+    set result to replace(result, "%3B", ";")
+    set result to replace(result, "%3D", "=")
+    set result to replace(result, "%3F", "?")
+    set result to replace(result, "%40", "@")
+    set result to replace(result, "%5B", "[")
+    set result to replace(result, "%5D", "]")
+    give back result
+end function
+
+define function buildQueryString that takes params
+    // params is a dict of key->value pairs
+    create list parts with value []
+    for each key in keys(params)
+        create text val with value toText(dictGet(params, key))
+        add (urlEncode(key) joined with "=" joined with urlEncode(val)) to parts
+    end for
+    give back join("&", parts)
+end function
+
+define function parseQueryString that takes qs
+    create dict result with value {}
+    if length of qs is equal to 0 then give back result end if
+    // Remove leading ?
+    if qs starts with "?" then
+        set qs to substring(qs, 1, length of qs minus 1)
+    end if
+    create list pairs with value split(qs, "&")
+    for each pair in pairs
+        create number eqIdx with value indexOf(pair, "=")
+        if eqIdx is greater than 0 then
+            create text k with value urlDecode(substring(pair, 0, eqIdx))
+            create text v with value urlDecode(substring(pair, eqIdx plus 1, length of pair minus eqIdx minus 1))
+            dictSet(result, k, v)
+        end if
+    end for
+    give back result
+end function
+
+define function parseUrl that takes url
+    create dict parts with value {}
+    // Extract protocol
+    create text proto with value ""
+    create text rest with value url
+    if url contains "://" then
+        create number protoEnd with value indexOf(url, "://")
+        set proto to substring(url, 0, protoEnd)
+        set rest to substring(url, protoEnd plus 3, length of url minus protoEnd minus 3)
+    end if
+    dictSet(parts, "protocol", proto)
+    // Extract host and path
+    create number slashIdx with value indexOf(rest, "/")
+    if slashIdx is greater than 0 then
+        dictSet(parts, "host", substring(rest, 0, slashIdx))
+        create text pathAndQuery with value substring(rest, slashIdx, length of rest minus slashIdx)
+        // Split path and query
+        create number qIdx with value indexOf(pathAndQuery, "?")
+        if qIdx is greater than 0 then
+            dictSet(parts, "path",  substring(pathAndQuery, 0, qIdx))
+            dictSet(parts, "query", substring(pathAndQuery, qIdx plus 1, length of pathAndQuery minus qIdx minus 1))
+        otherwise
+            dictSet(parts, "path",  pathAndQuery)
+            dictSet(parts, "query", "")
+        end if
+    otherwise
+        dictSet(parts, "host",  rest)
+        dictSet(parts, "path",  "/")
+        dictSet(parts, "query", "")
+    end if
+    give back parts
+end function
+
+// ── Request / Response builders ───────────────────────────────────────────────
+
+define function makeRequest that takes method and url and headers and body
+    create dict req with value {}
+    dictSet(req, "method",  upper(method))
+    dictSet(req, "url",     url)
+    dictSet(req, "headers", headers)
+    dictSet(req, "body",    body)
+    give back req
+end function
+
+define function makeHeaders that takes contentType
+    create dict h with value {}
+    dictSet(h, "Content-Type", contentType)
+    dictSet(h, "Accept",       "application/json")
+    dictSet(h, "User-Agent",   "Xerox/2.0 xm-networking/1.0")
+    give back h
+end function
+
+define function jsonHeaders
+    give back call makeHeaders with "application/json"
+end function
+
+define function formHeaders
+    give back call makeHeaders with "application/x-www-form-urlencoded"
+end function
+
+// ── Response helpers ──────────────────────────────────────────────────────────
+
+define function isOk that takes statusCode
+    give back statusCode is greater than 199 and statusCode is less than 300
+end function
+
+define function isRedirect that takes statusCode
+    give back statusCode is greater than 299 and statusCode is less than 400
+end function
+
+define function isClientError that takes statusCode
+    give back statusCode is greater than 399 and statusCode is less than 500
+end function
+
+define function isServerError that takes statusCode
+    give back statusCode is greater than 499 and statusCode is less than 600
+end function
+
+define function statusText that takes code
+    match code
+        when 200: give back "OK"
+        when 201: give back "Created"
+        when 204: give back "No Content"
+        when 301: give back "Moved Permanently"
+        when 302: give back "Found"
+        when 304: give back "Not Modified"
+        when 400: give back "Bad Request"
+        when 401: give back "Unauthorized"
+        when 403: give back "Forbidden"
+        when 404: give back "Not Found"
+        when 405: give back "Method Not Allowed"
+        when 409: give back "Conflict"
+        when 422: give back "Unprocessable Entity"
+        when 429: give back "Too Many Requests"
+        when 500: give back "Internal Server Error"
+        when 502: give back "Bad Gateway"
+        when 503: give back "Service Unavailable"
+        otherwise: give back "Unknown"
+    end match
+end function
+
+// ── Simple REST client builder ────────────────────────────────────────────────
+
+define function makeClient that takes baseUrl and defaultHeaders
+    create dict client with value {}
+    dictSet(client, "baseUrl",  baseUrl)
+    dictSet(client, "headers",  defaultHeaders)
+    give back client
+end function
+
+define function clientGet that takes client and path
+    create text url with value dictGet(client, "baseUrl") joined with path
+    create dict req with value call makeRequest with "GET" and url and dictGet(client, "headers") and ""
+    give back req
+end function
+
+define function clientPost that takes client and path and body
+    create text url with value dictGet(client, "baseUrl") joined with path
+    create dict req with value call makeRequest with "POST" and url and dictGet(client, "headers") and body
+    give back req
+end function
+
+define function clientPut that takes client and path and body
+    create text url with value dictGet(client, "baseUrl") joined with path
+    create dict req with value call makeRequest with "PUT" and url and dictGet(client, "headers") and body
+    give back req
+end function
+
+define function clientDelete that takes client and path
+    create text url with value dictGet(client, "baseUrl") joined with path
+    create dict req with value call makeRequest with "DELETE" and url and dictGet(client, "headers") and ""
+    give back req
+end function
+
+// ── IP / network utilities ────────────────────────────────────────────────────
+
+define function isValidIPv4 that takes ip
+    create list parts with value split(ip, ".")
+    if count of parts is not equal to 4 then give back false end if
+    for each part in parts
+        create number n with value toNumber(part)
+        if isNothing(n) then give back false end if
+        if n is less than 0 then give back false end if
+        if n is greater than 255 then give back false end if
+    end for
+    give back true
+end function
+
+define function ipToNumber that takes ip
+    create list parts with value split(ip, ".")
+    give back (toNumber(parts at index 0) multiplied by 16777216)
+        plus (toNumber(parts at index 1) multiplied by 65536)
+        plus (toNumber(parts at index 2) multiplied by 256)
+        plus  toNumber(parts at index 3)
+end function
+
+define function numberToIP that takes n
+    create number a with value floor(n divided by 16777216)
+    create number b with value floor((n modulo 16777216) divided by 65536)
+    create number c with value floor((n modulo 65536) divided by 256)
+    create number d with value n modulo 256
+    give back toText(a) joined with "." joined with toText(b) joined with "." joined with toText(c) joined with "." joined with toText(d)
+end function
+
+define function isPrivateIP that takes ip
+    if not call isValidIPv4 with ip then give back false end if
+    create list parts with value split(ip, ".")
+    create number first with value toNumber(parts at index 0)
+    create number second with value toNumber(parts at index 1)
+    // 10.x.x.x
+    if first is equal to 10 then give back true end if
+    // 172.16.x.x - 172.31.x.x
+    if first is equal to 172 and second is greater than 15 and second is less than 32 then give back true end if
+    // 192.168.x.x
+    if first is equal to 192 and second is equal to 168 then give back true end if
+    // 127.x.x.x loopback
+    if first is equal to 127 then give back true end if
+    give back false
+end function
+
+// ── MIME types ────────────────────────────────────────────────────────────────
+
+define function mimeType that takes extension
+    create text ext with value lower(extension)
+    if ext starts with "." then
+        set ext to substring(ext, 1, length of ext minus 1)
+    end if
+    match ext
+        when "html": give back "text/html"
+        when "htm":  give back "text/html"
+        when "css":  give back "text/css"
+        when "js":   give back "application/javascript"
+        when "json": give back "application/json"
+        when "xml":  give back "application/xml"
+        when "txt":  give back "text/plain"
+        when "csv":  give back "text/csv"
+        when "png":  give back "image/png"
+        when "jpg":  give back "image/jpeg"
+        when "jpeg": give back "image/jpeg"
+        when "gif":  give back "image/gif"
+        when "svg":  give back "image/svg+xml"
+        when "ico":  give back "image/x-icon"
+        when "pdf":  give back "application/pdf"
+        when "zip":  give back "application/zip"
+        when "mp3":  give back "audio/mpeg"
+        when "mp4":  give back "video/mp4"
+        when "wav":  give back "audio/wav"
+        when "xe":   give back "text/x-xerox"
+        otherwise:   give back "application/octet-stream"
+    end match
+end function
+
+// ── Base64 encoding ───────────────────────────────────────────────────────────
+
+define function base64Chars
+    give back "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+end function
+
+define function base64Encode that takes input
+    create text chars with value call base64Chars
+    create text result with value ""
+    create number i with value 0
+    create number len with value length of input
+
+    while i is less than len
+        create number b0 with value 0
+        create number b1 with value 0
+        create number b2 with value 0
+
+        // Get ASCII codes of chars
+        create text c0 with value charAt(input, i)
+        set b0 to indexOf("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", c0)
+        if b0 is less than 0 then set b0 to 0 end if
+
+        if i plus 1 is less than len then
+            create text c1 with value charAt(input, i plus 1)
+            set b1 to indexOf("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", c1)
+            if b1 is less than 0 then set b1 to 0 end if
+        end if
+
+        if i plus 2 is less than len then
+            create text c2 with value charAt(input, i plus 2)
+            set b2 to indexOf("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", c2)
+            if b2 is less than 0 then set b2 to 0 end if
+        end if
+
+        set result to result joined with charAt(chars, (b0 divided by 4))
+        set result to result joined with charAt(chars, ((b0 modulo 4) multiplied by 16) plus (b1 divided by 16))
+
+        if i plus 1 is less than len then
+            set result to result joined with charAt(chars, ((b1 modulo 16) multiplied by 4) plus (b2 divided by 64))
+        otherwise
+            set result to result joined with "="
+        end if
+
+        if i plus 2 is less than len then
+            set result to result joined with charAt(chars, b2 modulo 64)
+        otherwise
+            set result to result joined with "="
+        end if
+
+        increase i by 3
+    end while
+    give back result
+end function
+
+define function makeBasicAuth that takes username and password
+    create text credentials with value username joined with ":" joined with password
+    give back "Basic " joined with call base64Encode with credentials
+end function
+
+define function makeBearerAuth that takes token
+    give back "Bearer " joined with token
+end function
+
+// ── HTTP method constants ─────────────────────────────────────────────────────
+create text HTTP_GET    with value "GET"
+create text HTTP_POST   with value "POST"
+create text HTTP_PUT    with value "PUT"
+create text HTTP_PATCH  with value "PATCH"
+create text HTTP_DELETE with value "DELETE"
+create text HTTP_HEAD   with value "HEAD"
+create text HTTP_OPTIONS with value "OPTIONS"
